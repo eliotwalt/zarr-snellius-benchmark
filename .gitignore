@@ -1,0 +1,15 @@
+# python
+__pycache__/
+*.py[cod]
+
+# ipyhton
+.ipynb_checkpoints
+
+# specific
+logs/
+data/
+*.draft.*
+draft.*
+*.draft
+env/
+download_2*.sh

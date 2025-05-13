@@ -1,0 +1,41 @@
+batch_size: 5
+chunks: auto
+dask_scheduler: null
+dask_threads_per_worker: 1
+dask_workers: 1
+dataset: data/era5_weekly_aurora_2020-2022-wb13-1h-240x121.zarr-v2/
+date_range:
+- '2020-01-01'
+- '2022-12-31'
+levels:
+- 50
+- 100
+- 150
+- 200
+- 250
+- 300
+- 400
+- 500
+- 600
+- 700
+- 850
+- 925
+- 1000
+log_frequency: 10
+num_input_timesteps: 2
+num_output_timesteps: 1
+num_samples: 20
+persistent_workers: false
+pin_memory: false
+pt_workers: 0
+shuffle: false
+variables:
+- 2m_temperature
+- mean_sea_level_pressure
+- 10m_u_component_of_wind
+- 10m_v_component_of_wind
+- temperature
+- specific_humidity
+- u_component_of_wind
+- v_component_of_wind
+- geopotential
