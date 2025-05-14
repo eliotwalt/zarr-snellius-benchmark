@@ -1,0 +1,47 @@
+batch_size: 1
+chunks_open_strategy: auto
+dask_scheduler: null
+dask_threads_per_worker: 1
+dask_workers: 1
+dataloader_kwargs:
+  persistent_workers: false
+  pin_memory: false
+  shuffle: true
+dataset: gs://weatherbench2/datasets/era5_weekly/1959-2023_01_10-1h-240x121_equiangular_with_poles_conservative.zarr/
+date_end: '2022-12-31'
+date_range:
+- '2020-01-01'
+- '2022-12-31'
+date_start: '2020-01-01'
+experiment_dir: ./experiments/1w_240x121/mountain_thunder-20250514T170900
+levels:
+- 50
+- 100
+- 150
+- 200
+- 250
+- 300
+- 400
+- 500
+- 600
+- 700
+- 850
+- 925
+- 1000
+log_frequency: 10
+num_input_timesteps: 2
+num_output_timesteps: 1
+num_samples: 20
+pt_workers: 0
+variables:
+- 2m_temperature
+- mean_sea_level_pressure
+- 10m_u_component_of_wind
+- 10m_v_component_of_wind
+- temperature
+- specific_humidity
+- u_component_of_wind
+- v_component_of_wind
+- geopotential
+zarr_format: 3
+zarr_version: 3.0.7
