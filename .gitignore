@@ -13,3 +13,4 @@ draft.*
 *.draft
 env/
 download_2*.sh
+experiments2

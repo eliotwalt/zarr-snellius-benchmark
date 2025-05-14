@@ -1,12 +1,19 @@
-batch_size: 5
-chunks: auto
+batch_size: 1
+chunks_open_strategy: auto
 dask_scheduler: null
 dask_threads_per_worker: 1
 dask_workers: 1
-dataset: /home/ewalt/zarr-snellius-benchmark/data/era5_weekly_aurora_2020-2022-wb13-1h-240x121.zarr-v3
+dataloader_kwargs:
+  persistent_workers: false
+  pin_memory: false
+  shuffle: true
+dataset: ./data/era5_weekly_aurora_2000-2022-wb13-1h-240x121.zarr-v2
+date_end: '2022-12-31'
 date_range:
 - '2020-01-01'
 - '2022-12-31'
+date_start: '2020-01-01'
+experiment_dir: ./experiments/decisive_sander-20250514T152349
 levels:
 - 50
 - 100
@@ -24,11 +31,8 @@ levels:
 log_frequency: 10
 num_input_timesteps: 2
 num_output_timesteps: 1
-num_samples: 20
-persistent_workers: false
-pin_memory: false
+num_samples: 100
 pt_workers: 0
-shuffle: false
 variables:
 - 2m_temperature
 - mean_sea_level_pressure
@@ -39,5 +43,5 @@ variables:
 - u_component_of_wind
 - v_component_of_wind
 - geopotential
-zarr_format: 3
-zarr_version: 3.0.7
+zarr_format: 2
+zarr_version: 2.18.7

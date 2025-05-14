@@ -14,4 +14,5 @@ slurm/download.sh \
     ${zarr_version} \
     --dataset gs://weatherbench2/datasets/era5_weekly/1959-2023_01_10-1h-240x121_equiangular_with_poles_conservative.zarr/ \
     --output data/era5_weekly_aurora_${year_start}-${year_end}-wb13-1h-240x121.zarr \
-    --date_range ${year_start}-01-01 ${year_end}-12-31
+    --date_start ${year_start}-01-01 \
+    --date_end ${year_end}-12-31

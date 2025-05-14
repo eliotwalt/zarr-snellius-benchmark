@@ -5,11 +5,12 @@ import logging
 import matplotlib.pyplot as plt
 import os
 import dask
-from torch.utils.data import DataLoader
 import zarr
 
 from dataset import BaseDataset
-from utils import write_zarr
+from write import write_zarr
+from args import Arguments
+from utils import load_dataset
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -29,98 +30,50 @@ def get_args():
     logger.info("Parsing arguments")
     parser = argparse.ArgumentParser()
     
-    # xarray dataset open
-    parser.add_argument(
-        "--dataset", 
-        type=str, 
-        required=True, # "gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721.zarr/" 
-        help="Path to the xarray dataset (local or remote)"
-    )
-    parser.add_argument(
-        "--output",
-        type=str,
-        required=True,
-        help="Output path for the dataset"
-    )
-    parser.add_argument(
-        "--chunks",
-        type=str,
-        default="auto",
-        help="Chunking strategy for opening the xarray dataset (default: auto)"
-    )
-    parser.add_argument(
-        "--variables", 
-        type=str, 
-        nargs="+", 
-        # default=[
-        #     "2t", "msl", "10u", "10v",
-        #     "t", "q", "u", "v", "z",
-        # ], 
-        default=[
-            "2m_temperature", "mean_sea_level_pressure", "10m_u_component_of_wind", "10m_v_component_of_wind",
-            "temperature", "specific_humidity", "u_component_of_wind", "v_component_of_wind", "geopotential",
-        ],
-        help="List of variables to include in the dataset"
-    )
-    parser.add_argument(
-        "--levels", 
-        type=int, 
-        nargs="+", 
-        default=[50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000], 
-        help="List of levels to include in the dataset"
-    )
-    parser.add_argument(
-        "--date_range",
-        type=str,
-        nargs=2,
-        default=["2020-01-01", "2022-12-31"],
-        help="Date range to include in the dataset (start, end)"
-    )
-    
-    # dask arguments
-    parser.add_argument(
-        "--dask_scheduler",
-        type=str,
-        default=None,
-        choices=[None, "threads", "processes", "single-threaded", "synchronous"],
-        help="Dask scheduler to use"
-    )
-    parser.add_argument(
-        "--dask_workers",
-        type=int,
-        default=1,
-        help="Number of workers to use for dask"
-    )
-    parser.add_argument(
-        "--dask_threads_per_worker",
-        type=int,
-        default=1,
-        help="Number of threads per worker to use for dask"
-    )
+    parser.add_argument(Arguments.DATASET.flag, **Arguments.DATASET.kwargs)
+    parser.add_argument(Arguments.OUTPUT.flag, **Arguments.OUTPUT.kwargs)
+    parser.add_argument(Arguments.CHUNKS_OPEN_STRATEGY.flag, **Arguments.CHUNKS_OPEN_STRATEGY.kwargs)
+    parser.add_argument(Arguments.CHUNKS_WRITE_STRATEGY.flag, **Arguments.CHUNKS_WRITE_STRATEGY.kwargs)
+    parser.add_argument(Arguments.COMPRESS_VARS.flag, **Arguments.COMPRESS_VARS.kwargs)
+    parser.add_argument(Arguments.COMPRESS_COORDS.flag, **Arguments.COMPRESS_COORDS.kwargs)
+    parser.add_argument(Arguments.VARIABLES.flag, **Arguments.VARIABLES.kwargs)
+    parser.add_argument(Arguments.LEVELS.flag, **Arguments.LEVELS.kwargs)
+    parser.add_argument(Arguments.DATE_START_DOWNLOAD.flag, **Arguments.DATE_START_DOWNLOAD.kwargs)
+    parser.add_argument(Arguments.DATE_END_DOWNLOAD.flag, **Arguments.DATE_END_DOWNLOAD.kwargs)
+    parser.add_argument(Arguments.DASK_SCHEDULER.flag, **Arguments.DASK_SCHEDULER.kwargs)
+    parser.add_argument(Arguments.DASK_WORKERS.flag, **Arguments.DASK_WORKERS.kwargs)
+    parser.add_argument(Arguments.DASK_THREADS_PER_WORKER.flag, **Arguments.DASK_THREADS_PER_WORKER.kwargs)
 
     # parse arguments
     args = parser.parse_args()
-    assert len(args.date_range) == 2, "Date range must be a tuple of (start, end)"
     
     # parse arguments
     args = parser.parse_args()
-    args.date_range = list(args.date_range)
-    args.zarr_version = zarr.__version__
     
-    varr_version = zarr.__version__
-    if varr_version.startswith("2."):
+    try: args.chunks_open_strategy = eval(args.chunks_open_strategy)
+    except Exception as e: pass
+    
+    try: args.chunks_write_strategy = eval(args.chunks_write_strategy)
+    except Exception as e: pass
+    logger.info(f"Parsed chunks write strategy: {args.chunks_write_strategy}")
+    
+    args.date_range = [args.date_start, args.date_end]
+    if args.date_range[0] is None or args.date_range[1] is None:
+        logger.warning("Date range not specified, this will download the entire dataset")
+    
+    args.zarr_version = zarr.__version__
+    if args.zarr_version.startswith("2."):
         logger.info("Zarr version 2.x detected")
-        zarr_format = 2
-    elif varr_version.startswith("3."):
+        args.zarr_format = 2
+    elif args.zarr_version.startswith("3."):
         logger.info("Zarr version 3.x detected")
-        zarr_format = 3
+        args.zarr_format = 3
     else:
-        raise ValueError(f"Unknown Zarr version: {varr_version}")
-    args.zarr_format = zarr_format
+        raise ValueError(f"Unknown Zarr version: {args.varr_version}")
         
     if args.output.endswith("/"):
         args.output = args.output[:-1]
-    args.output = f"{args.output}-v{zarr_format}"
+    args.output = f"{args.output}-v{args.zarr_format}"
     
     return args
 
@@ -137,10 +90,8 @@ def main():
         logger.info(f"Configured dask (scheduler: {args.dask_scheduler}, workers: {args.dask_workers}, threads per worker: {args.dask_threads_per_worker})")
     
     # load dataset
-    logger.info(f"Loading dataset from {args.dataset}")
-    ds = xr.open_zarr(args.dataset, chunks=args.chunks)
-    ds = ds.sel(time=slice(args.date_range[0], args.date_range[1]))
-    ds = ds[args.variables].sel(level=args.levels)
+    logger.info(f"Loading dataset from {args.dataset} for dates {args.date_range[0]} to {args.date_range[1]}")
+    ds = load_dataset(args)
     logger.info(f"Loaded dataset with shape: {ds.dims}")
     
     # write to zarr
@@ -148,7 +99,9 @@ def main():
         ds, 
         path=args.output,
         exist_ok=True,
-        new_chunks={"time": 1, "latitude": -1, "longitude": -1, "level": -1}
+        new_chunks=args.chunks_write_strategy,
+        compress_vars=args.compress_vars,
+        compress_coords=args.compress_coords,
     )
     
 if __name__ == "__main__":
