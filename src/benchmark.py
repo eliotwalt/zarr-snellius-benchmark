@@ -101,7 +101,7 @@ def main():
     
     # load dataset
     logger.info(f"Loading dataset from {args.dataset} for dates {args.date_range[0]} to {args.date_range[1]}")
-    ds = load_dataset(args)
+    ds = load_dataset(args, force_zarr_format=True)
     logger.info(f"Loaded dataset with shape: {ds.dims}")
     
     # create dataset
