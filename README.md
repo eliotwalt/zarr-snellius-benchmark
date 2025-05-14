@@ -24,4 +24,4 @@ source env/venv_zarr-v3/bin/activate
 - slurm entrypoint: `slurm/benchmark.sh <ZARR_VERSION> <OPTIONS>`, with `ZARR_VERSION` either `2` or `3`.
 - example: `benchmark.sh <ZARR_VERSION> <DATASET>` -> benchmarks a given dataset with default dask setup.
 
-This write some logs in `experiments/`. Check out the notebooks `analysis_240x121-v2.ipynb`.
+This write some logs in `experiments/`. Check out the notebooks `analysis_240x121-v2-num_years.ipynb` and `analysis_240x121-v2-v3.ipynb`.
