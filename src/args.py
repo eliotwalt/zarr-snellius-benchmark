@@ -1,5 +1,14 @@
 import dataclasses
 
+def _parse_chunks_write_strategy(choice):
+    """Parse the chunks write strategy argument."""
+    if choice == "optimal_dataset":
+        return {"time": 1, "latitude": -1, "longitude": -1, "level": -1}
+    elif choice == "optimal_dataarray":
+        return {"time": 1, "latitude": -1, "longitude": -1, "level": -1, "variable": -1}
+    else:
+        raise ValueError(f"Invalid chunks write strategy: {choice}")
+
 @dataclasses.dataclass
 class ArgumentItem(object):
     """Class to represent an argument item."""
@@ -43,10 +52,10 @@ class Arguments(object):
     CHUNKS_WRITE_STRATEGY = ArgumentItem(**{
         "flag": "--chunks_write_strategy",
         "kwargs": {
-            "type": str,
-            "default": '{"time": 1, "latitude": -1, "longitude": -1, "level": -1}',
-            "help": "Chunking strategy for writing the xarray dataset (default: auto)"
-        }
+            "type": _parse_chunks_write_strategy,         
+            "default": "optimal_dataset",
+            "help": "Chunking strategy for writing the xarray dataset. Must be one of ['optimal_dataset', 'optimal_dataarray'] (default: optimal_dataset)"
+        },
     })
     COMPRESS_VARS = ArgumentItem(**{
         "flag": "--compress_vars",
@@ -198,5 +207,6 @@ class Arguments(object):
             "help": "Number of samples to benchmark"
         }
     }) 
+    
     
     

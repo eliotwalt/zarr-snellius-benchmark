@@ -61,7 +61,7 @@ class BaseDataset(Dataset):
         self.total_timesteps = len(self.ds['time'])
 
     def __len__(self):
-        return self.total_timesteps - self.sample_timesteps
+        return self.total_timesteps - self.sample_timesteps + 1
 
     def __getitem__(self, i):
         sample = self.ds.isel(time=slice(i, i+self.sample_timesteps))

@@ -27,7 +27,7 @@ def get_compressor():
     return compressor_key, compressor
 
 def write_zarr(
-    ds: xr.Dataset, 
+    ds: xr.Dataset|xr.DataArray, 
     path: str, 
     exist_ok: bool=False, 
     new_chunks: dict=None, 
@@ -60,24 +60,37 @@ def write_zarr(
     if compress_vars or compress_coords:
         compressor_key, compressor = get_compressor()
         
+    # convert to dataarray if new_chunks has 1 more dimension
+    if len(new_chunks) == len(ds.sizes)+1:
+        logger.info(f"Converting dataset to dataarray with new dimension {list(new_chunks.keys())[0]}")
+        dims = list(ds.sizes.keys())
+        ds = ds.to_array(dim="variable", name="variable").transpose(*dims, "variable")
+        # rename the chunk to 'variable'
+        for d in new_chunks:
+            if not d in dims:
+                value = new_chunks.pop(d)
+                new_chunks["variable"] = value
+        
     # reformat chunks if needed
     if new_chunks is not None:
-        for var, chunk in new_chunks.items():
+        for d, chunk in new_chunks.items():
             if chunk == -1:
-                new_chunks[var] = ds.sizes[var]
+                new_chunks[d] = ds.sizes[d]
+        logger.info(f"Rechunking to: {new_chunks}")
         ds = ds.chunk(new_chunks)
 
     # reset encoding
     encoding = {}
     
     # set encoding for each variable
-    for var in ds.data_vars:
-        var_encoding = {}
-        if new_chunks is not None:
-            var_encoding["chunks"] = tuple(new_chunks[dim] for dim in ds[var].sizes)
-        if compress_vars:
-            var_encoding[compressor_key] = compressor
-        encoding[var] = var_encoding
+    if isinstance(ds, xr.Dataset):
+        for var in ds.data_vars:
+            var_encoding = {}
+            if new_chunks is not None:
+                var_encoding["chunks"] = tuple(new_chunks[dim] for dim in ds[var].sizes)
+            if compress_vars:
+                var_encoding[compressor_key] = compressor
+            encoding[var] = var_encoding
         
     # set encoding for each coordinate
     for coord in ds.coords:
