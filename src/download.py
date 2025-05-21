@@ -47,9 +47,6 @@ def get_args():
     # parse arguments
     args = parser.parse_args()
     
-    # parse arguments
-    args = parser.parse_args()
-    
     try: args.chunks_open_strategy = eval(args.chunks_open_strategy)
     except Exception as e: pass
     
